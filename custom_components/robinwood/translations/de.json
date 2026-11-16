@@ -27,5 +27,25 @@
         }
       }
     }
+  },
+  "services": {
+    "parameter_lesen": {
+      "name": "Parameter lesen",
+      "description": "Liest Info-Werte (3xxxx/5xxxx) direkt vom 4Heat-Modul – nur lesen.",
+      "fields": {
+        "start": {
+          "name": "Start",
+          "description": "Erste Parameternummer"
+        },
+        "ende": {
+          "name": "Ende",
+          "description": "Letzte Parameternummer (max. 200 ab Start)"
+        },
+        "nur_treffer": {
+          "name": "Nur Treffer",
+          "description": "Nur Parameter mit Wert zurückgeben"
+        }
+      }
+    }
   }
 }

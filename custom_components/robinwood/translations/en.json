@@ -27,5 +27,25 @@
         }
       }
     }
+  },
+  "services": {
+    "parameter_lesen": {
+      "name": "Read parameters",
+      "description": "Reads info values (3xxxx/5xxxx) from the 4Heat module – read only.",
+      "fields": {
+        "start": {
+          "name": "Start",
+          "description": "First parameter id"
+        },
+        "ende": {
+          "name": "End",
+          "description": "Last parameter id (max 200 from start)"
+        },
+        "nur_treffer": {
+          "name": "Only hits",
+          "description": "Only return parameters with a value"
+        }
+      }
+    }
   }
 }

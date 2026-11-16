@@ -1,0 +1,21 @@
+parameter_lesen:
+  fields:
+    start:
+      required: true
+      example: 30000
+      selector:
+        number:
+          min: 30000
+          max: 59999
+          mode: box
+    ende:
+      example: 30060
+      selector:
+        number:
+          min: 30000
+          max: 59999
+          mode: box
+    nur_treffer:
+      default: true
+      selector:
+        boolean:

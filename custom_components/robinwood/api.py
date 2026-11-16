@@ -190,3 +190,25 @@ class FourHeatClient:
         payload = json.dumps(["SEC", str(len(codes)), *codes], separators=(",", ":"))
         _LOGGER.info("Sende an 4Heat: %s", payload)
         return await self.exchange(payload, is_command=True)
+
+    async def read_codes(self, pids: list[str]) -> dict[str, float | int | None]:
+        """Einzelne Info-Werte gezielt lesen (wie die App: SEC mit I-Codes).
+
+        Nur Info-Parameter (3xxxx / 5xxxx) – das sind reine Messwerte.
+        """
+        for pid in pids:
+            if len(pid) != 5 or not pid.isdigit() or pid[0] not in "35":
+                raise ValueError(f"Nur Info-Parameter 3xxxx/5xxxx erlaubt: {pid}")
+        codes = [f"I{pid}000000000000" for pid in pids]
+        payload = json.dumps(["SEC", str(len(codes)), *codes], separators=(",", ":"))
+        resp = await self.exchange(payload)
+        result: dict[str, float | int | None] = {pid: None for pid in pids}
+        values = resp[2:] if resp and resp[0] == "SEC" else []
+        for code in values:
+            r = parse_code(code)
+            if r is not None and r.pid in result:
+                result[r.pid] = r.value
+        if not any(v is not None for v in result.values()):
+            _LOGGER.debug("Antwort auf %s: %s", payload, resp)
+        return result
+
