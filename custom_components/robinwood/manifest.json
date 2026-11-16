@@ -1,0 +1,12 @@
+{
+  "domain": "robinwood",
+  "name": "Robin Wood Pelletofen (4Heat lokal)",
+  "codeowners": ["@TeyPay-oss"],
+  "config_flow": true,
+  "documentation": "https://github.com/TeyPay-oss/robinwood-ha",
+  "integration_type": "device",
+  "iot_class": "local_polling",
+  "issue_tracker": "https://github.com/TeyPay-oss/robinwood-ha/issues",
+  "requirements": [],
+  "version": "0.1.0"
+}

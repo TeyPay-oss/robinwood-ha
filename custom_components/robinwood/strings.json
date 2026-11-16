@@ -1,0 +1,31 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Robin Wood Pelletofen",
+        "description": "IP-Adresse des 4Heat-WLAN-Moduls am Ofen eingeben.",
+        "data": {
+          "host": "IP-Adresse",
+          "port": "Port"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Keine Verbindung zum Modul. IP prüfen, ist der Ofen im WLAN?",
+      "no_data": "Das Modul antwortet, liefert aber keine Werte."
+    },
+    "abort": {
+      "already_configured": "Dieser Ofen ist bereits eingerichtet."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Einstellungen",
+        "data": {
+          "scan_interval": "Abfrageintervall (Sekunden)"
+        }
+      }
+    }
+  }
+}
