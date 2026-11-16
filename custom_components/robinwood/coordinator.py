@@ -8,6 +8,7 @@ from datetime import timedelta
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
+from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
 from .api import FourHeatClient, FourHeatError, StoveData, build_write_code
@@ -57,10 +58,20 @@ class RobinWoodCoordinator(DataUpdateCoordinator[StoveData]):
         try:
             await self.client.send_codes(*codes)
         except FourHeatError as err:
-            raise UpdateFailed(f"Befehl nicht angekommen: {err}") from err
+            raise HomeAssistantError(f"Befehl nicht angekommen: {err}") from err
         # Das Modul braucht etwas, bis der neue Zustand im SEL steht
         await asyncio.sleep(3)
         await self.async_request_refresh()
+
+    async def _read_now(self) -> StoveData | None:
+        try:
+            data = await self.client.read_all()
+        except FourHeatError as err:
+            _LOGGER.debug("Kontroll-Abfrage fehlgeschlagen: %s", err)
+            return None
+        self._failures = 0
+        self.async_set_updated_data(data)
+        return data
 
     async def async_turn_on(self) -> None:
         await self._send(CODE_ON)
@@ -72,4 +83,16 @@ class RobinWoodCoordinator(DataUpdateCoordinator[StoveData]):
         await self._send(CODE_UNLOCK)
 
     async def async_write(self, pid: str, value: int) -> None:
-        await self._send(build_write_code(pid, value))
+        """Wert schreiben und prüfen, ob der Ofen ihn übernommen hat."""
+        try:
+            await self.client.send_codes(build_write_code(pid, value))
+        except FourHeatError as err:
+            raise HomeAssistantError(f"Befehl nicht angekommen: {err}") from err
+        for _ in range(4):
+            await asyncio.sleep(3)
+            data = await self._read_now()
+            if data is not None and data.get(pid) == value:
+                return
+        raise HomeAssistantError(
+            "Der Ofen hat den neuen Wert nicht bestätigt – bitte am Display prüfen."
+        )

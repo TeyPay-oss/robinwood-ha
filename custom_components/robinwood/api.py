@@ -28,6 +28,10 @@ class FourHeatError(Exception):
     """Allgemeiner Kommunikationsfehler."""
 
 
+class FourHeatConnectError(FourHeatError):
+    """Verbindung kam nicht zustande – es wurde nichts gesendet."""
+
+
 @dataclass
 class Reading:
     """Ein einzelner Wert aus der SEL-Antwort."""
@@ -100,10 +104,13 @@ class FourHeatClient:
         self.port = port
         self._lock = asyncio.Lock()
 
-    async def _exchange_once(self, payload: str) -> list[str]:
-        reader, writer = await asyncio.wait_for(
-            asyncio.open_connection(self.host, self.port), CONNECT_TIMEOUT
-        )
+    async def _exchange_once(self, payload: str, allow_empty: bool = False) -> list[str]:
+        try:
+            reader, writer = await asyncio.wait_for(
+                asyncio.open_connection(self.host, self.port), CONNECT_TIMEOUT
+            )
+        except (OSError, asyncio.TimeoutError) as err:
+            raise FourHeatConnectError(f"Verbindung fehlgeschlagen: {err}") from err
         try:
             await asyncio.sleep(SEND_DELAY)
             writer.write(payload.encode("ascii"))
@@ -115,7 +122,10 @@ class FourHeatClient:
                 remaining = deadline - loop.time()
                 if remaining <= 0:
                     break
-                chunk = await asyncio.wait_for(reader.read(4096), remaining)
+                try:
+                    chunk = await asyncio.wait_for(reader.read(4096), remaining)
+                except asyncio.TimeoutError:
+                    break
                 if not chunk:
                     break
                 buf += chunk
@@ -125,7 +135,11 @@ class FourHeatClient:
                         break
                     except json.JSONDecodeError:
                         continue
-            if not buf:
+            if not buf.strip():
+                if allow_empty:
+                    # Das Modul führt Befehle oft aus, ohne zu antworten
+                    _LOGGER.debug("Leere Antwort auf %s – gilt als angenommen", payload)
+                    return []
                 raise FourHeatError("Leere Antwort")
             return _parse_list(buf.decode("ascii", "replace"))
         finally:
@@ -135,17 +149,26 @@ class FourHeatClient:
             except Exception:  # noqa: BLE001
                 pass
 
-    async def exchange(self, payload: str) -> list[str]:
-        """Anfrage senden, mit Wiederholungen. Anfragen laufen nie parallel."""
+    async def exchange(self, payload: str, is_command: bool = False) -> list[str]:
+        """Anfrage senden. Anfragen laufen nie parallel.
+
+        Lesen wird bei Fehlern wiederholt. Befehle werden nur wiederholt,
+        wenn die Verbindung gar nicht zustande kam – sonst könnte der Ofen
+        einen Befehl doppelt bekommen.
+        """
         async with self._lock:
             last: Exception | None = None
             for attempt in range(1, RETRIES + 1):
                 try:
-                    resp = await self._exchange_once(payload)
-                    if resp[0] == "ERR":
+                    resp = await self._exchange_once(payload, allow_empty=is_command)
+                    if resp and resp[0] == "ERR":
                         raise FourHeatError(f"Modul meldet Fehler: {resp}")
                     return resp
+                except FourHeatConnectError as err:
+                    last = err
                 except (OSError, asyncio.TimeoutError, FourHeatError) as err:
+                    if is_command:
+                        raise FourHeatError(f"Befehl fehlgeschlagen: {err}") from err
                     last = err
                     _LOGGER.debug("Versuch %s/%s fehlgeschlagen: %s", attempt, RETRIES, err)
                     await asyncio.sleep(1.5 * attempt)
@@ -153,7 +176,7 @@ class FourHeatClient:
 
     async def read_all(self) -> StoveData:
         resp = await self.exchange('["SEL","0"]')
-        if resp[0] != "SEL":
+        if not resp or resp[0] != "SEL":
             raise FourHeatError(f"Unerwartete Antwort auf SEL: {resp[:3]}")
         data = StoveData()
         for code in resp[2:]:
@@ -166,4 +189,4 @@ class FourHeatClient:
         """Einen oder mehrere Codes schreiben (SEC)."""
         payload = json.dumps(["SEC", str(len(codes)), *codes], separators=(",", ":"))
         _LOGGER.info("Sende an 4Heat: %s", payload)
-        return await self.exchange(payload)
+        return await self.exchange(payload, is_command=True)
