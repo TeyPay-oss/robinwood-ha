@@ -107,13 +107,6 @@ SENSORS: tuple[RWSensorDescription, ...] = (
         suggested_display_precision=1,
     ),
     RWSensorDescription(
-        key="leistung_aktuell_roh",
-        pid=P_COMBUSTION,
-        name="Verbrennungsleistung aktuell (Rohwert)",
-        icon="mdi:fire",
-        state_class=SensorStateClass.MEASUREMENT,
-    ),
-    RWSensorDescription(
         key="leistung_max",
         pid=P_POWER_MAX,
         name="Leistungsstufen (Anzahl)",
@@ -138,7 +131,12 @@ async def async_setup_entry(
 ) -> None:
     coord = entry.runtime_data
     entities: list[SensorEntity] = [RWSensor(coord, d) for d in SENSORS]
-    entities += [RWStatusSensor(coord), RWErrorSensor(coord), RWPowerSensor(coord)]
+    entities += [
+        RWStatusSensor(coord),
+        RWErrorSensor(coord),
+        RWPowerSensor(coord),
+        RWCurrentPowerSensor(coord),
+    ]
     # Alle weiteren Werte, die das Modul liefert, als (deaktivierte) Rohwert-Sensoren
     if coord.data:
         for pid, reading in sorted(coord.data.readings.items()):
@@ -224,6 +222,28 @@ class RWPowerSensor(RobinWoodEntity, SensorEntity):
     @property
     def extra_state_attributes(self):
         return {"rohwert": self.value(P_POWER_SET)}
+
+
+class RWCurrentPowerSensor(RobinWoodEntity, SensorEntity):
+    """Stufe, auf der der Ofen gerade tatsächlich läuft (auch im Auto-Modus)."""
+
+    _attr_name = "Verbrennungsleistung aktuell"
+    _attr_icon = "mdi:fire"
+
+    def __init__(self, coordinator) -> None:
+        super().__init__(coordinator, "leistung_aktuell")
+
+    @property
+    def native_value(self):
+        raw = self.value(P_COMBUSTION)
+        if raw is None:
+            return None
+        raw = int(raw)
+        return f"P{raw}" if raw > 0 else "–"
+
+    @property
+    def extra_state_attributes(self):
+        return {"rohwert": self.value(P_COMBUSTION)}
 
 
 class RWRawSensor(RobinWoodEntity, SensorEntity):
