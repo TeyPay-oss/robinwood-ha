@@ -31,6 +31,12 @@ P_POWER_MIN = "20212"
 P_POWER_WOOD = "20803"
 P_THERMOSTAT = "20180"
 P_COMBUSTION = "30011"
+P_FAN_SET = "30008"  # Ventilator Solldrehzahl (rpm)
+P_FAN = "30025"  # Ventilator Drehzahl (rpm)
+P_AUGER = "50010"  # Förderschnecke Laufzeit (s, Dezimal)
+
+# Werte, die nicht in der SEL-Liste des Moduls stehen und gezielt gelesen werden
+EXTRA_PIDS = [P_FAN, P_FAN_SET, P_AUGER, P_COMBUSTION]
 
 # 20813: Rohwert 1..n = P1..Pn, n+1 = Auto (n = Parameter 20211)
 

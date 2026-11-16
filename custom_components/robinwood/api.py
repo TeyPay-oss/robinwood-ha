@@ -174,7 +174,7 @@ class FourHeatClient:
                     await asyncio.sleep(1.5 * attempt)
             raise FourHeatError(f"Keine Antwort von {self.host}: {last}")
 
-    async def read_all(self) -> StoveData:
+    async def read_all(self, extra: list[str] | None = None) -> StoveData:
         resp = await self.exchange('["SEL","0"]')
         if not resp or resp[0] != "SEL":
             raise FourHeatError(f"Unerwartete Antwort auf SEL: {resp[:3]}")
@@ -183,6 +183,19 @@ class FourHeatClient:
             r = parse_code(code)
             if r is not None:
                 data.readings[r.pid] = r
+        if extra:
+            missing = [p for p in extra if p not in data.readings]
+            if missing:
+                try:
+                    codes = [f"I{p}000000000000" for p in missing]
+                    payload = json.dumps(["SEC", str(len(codes)), *codes], separators=(",", ":"))
+                    ext = await self.exchange(payload)
+                    for code in ext[2:] if ext and ext[0] == "SEC" else []:
+                        r = parse_code(code)
+                        if r is not None and r.pid in missing:
+                            data.readings[r.pid] = r
+                except FourHeatError as err:
+                    _LOGGER.debug("Zusatzwerte nicht gelesen: %s", err)
         return data
 
     async def send_codes(self, *codes: str) -> list[str]:

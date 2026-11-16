@@ -13,6 +13,7 @@ from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, Upda
 
 from .api import FourHeatClient, FourHeatError, StoveData, build_write_code
 from .const import (
+    EXTRA_PIDS,
     CODE_OFF,
     CODE_ON,
     CODE_UNLOCK,
@@ -43,7 +44,7 @@ class RobinWoodCoordinator(DataUpdateCoordinator[StoveData]):
 
     async def _async_update_data(self) -> StoveData:
         try:
-            data = await self.client.read_all()
+            data = await self.client.read_all(EXTRA_PIDS)
         except FourHeatError as err:
             self._failures += 1
             # Einzelne Aussetzer überbrücken: alte Werte behalten
@@ -65,7 +66,7 @@ class RobinWoodCoordinator(DataUpdateCoordinator[StoveData]):
 
     async def _read_now(self) -> StoveData | None:
         try:
-            data = await self.client.read_all()
+            data = await self.client.read_all(EXTRA_PIDS)
         except FourHeatError as err:
             _LOGGER.debug("Kontroll-Abfrage fehlgeschlagen: %s", err)
             return None

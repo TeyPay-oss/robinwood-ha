@@ -10,7 +10,14 @@ from homeassistant.components.sensor import (
     SensorEntityDescription,
     SensorStateClass,
 )
-from homeassistant.const import EntityCategory, UnitOfPressure, UnitOfTemperature, UnitOfVolumeFlowRate
+from homeassistant.const import (
+    REVOLUTIONS_PER_MINUTE,
+    EntityCategory,
+    UnitOfPressure,
+    UnitOfTemperature,
+    UnitOfTime,
+    UnitOfVolumeFlowRate,
+)
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
@@ -18,6 +25,10 @@ from . import RobinWoodConfigEntry
 from .const import (
     ERROR_TEXT,
     P_AIRFLOW,
+    P_AUGER,
+    P_COMBUSTION,
+    P_FAN,
+    P_FAN_SET,
     P_DEPRESSION,
     P_ERROR,
     P_EXHAUST,
@@ -46,7 +57,7 @@ TEMP = dict(
 )
 
 SENSORS: tuple[RWSensorDescription, ...] = (
-    RWSensorDescription(key="wasser", pid=P_WATER, name="Wassertemperatur", icon="mdi:water-thermometer", **TEMP),
+    RWSensorDescription(key="wasser", pid=P_WATER, name="Kesseltemperatur", icon="mdi:water-thermometer", **TEMP),
     RWSensorDescription(key="puffer", pid=P_PUFFER, name="Puffertemperatur", icon="mdi:storage-tank", **TEMP),
     RWSensorDescription(key="abgas", pid=P_EXHAUST, name="Abgastemperatur", icon="mdi:smoke", **TEMP),
     RWSensorDescription(key="ruecklauf", pid=P_RETURN, name="Rücklauftemperatur", icon="mdi:thermometer-chevron-down", **TEMP),
@@ -65,7 +76,41 @@ SENSORS: tuple[RWSensorDescription, ...] = (
         name="Abgasunterdruck",
         icon="mdi:gauge",
         device_class=SensorDeviceClass.PRESSURE,
-        native_unit_of_measurement=UnitOfPressure.PA,
+        native_unit_of_measurement=UnitOfPressure.MBAR,
+        state_class=SensorStateClass.MEASUREMENT,
+    ),
+    RWSensorDescription(
+        key="ventilator",
+        pid=P_FAN,
+        name="Ventilator Drehzahl",
+        icon="mdi:fan",
+        native_unit_of_measurement=REVOLUTIONS_PER_MINUTE,
+        state_class=SensorStateClass.MEASUREMENT,
+    ),
+    RWSensorDescription(
+        key="ventilator_soll",
+        pid=P_FAN_SET,
+        name="Ventilator Solldrehzahl",
+        icon="mdi:fan-clock",
+        native_unit_of_measurement=REVOLUTIONS_PER_MINUTE,
+        state_class=SensorStateClass.MEASUREMENT,
+        entity_category=EntityCategory.DIAGNOSTIC,
+    ),
+    RWSensorDescription(
+        key="foerderschnecke",
+        pid=P_AUGER,
+        name="Förderschnecke Laufzeit",
+        icon="mdi:screw-machine-flat-top",
+        device_class=SensorDeviceClass.DURATION,
+        native_unit_of_measurement=UnitOfTime.SECONDS,
+        state_class=SensorStateClass.MEASUREMENT,
+        suggested_display_precision=1,
+    ),
+    RWSensorDescription(
+        key="leistung_aktuell_roh",
+        pid=P_COMBUSTION,
+        name="Verbrennungsleistung aktuell (Rohwert)",
+        icon="mdi:fire",
         state_class=SensorStateClass.MEASUREMENT,
     ),
     RWSensorDescription(
