@@ -41,10 +41,18 @@ class RobinWoodCoordinator(DataUpdateCoordinator[StoveData]):
         )
         self.client = client
         self._failures = 0
+        self._polls = 0
 
     async def _async_update_data(self) -> StoveData:
         try:
-            data = await self.client.read_all(EXTRA_PIDS)
+            # Zusatzwerte nur bei jeder 2. Abfrage, alte Werte dazwischen übernehmen
+            self._polls += 1
+            want_extra = self._polls % 2 == 1
+            data = await self.client.read_all(EXTRA_PIDS if want_extra else None)
+            if self.data is not None:
+                for pid in EXTRA_PIDS:
+                    if pid not in data.readings and pid in self.data.readings:
+                        data.readings[pid] = self.data.readings[pid]
         except FourHeatError as err:
             self._failures += 1
             # Einzelne Aussetzer überbrücken: alte Werte behalten
@@ -66,7 +74,14 @@ class RobinWoodCoordinator(DataUpdateCoordinator[StoveData]):
 
     async def _read_now(self) -> StoveData | None:
         try:
-            data = await self.client.read_all(EXTRA_PIDS)
+            # Zusatzwerte nur bei jeder 2. Abfrage, alte Werte dazwischen übernehmen
+            self._polls += 1
+            want_extra = self._polls % 2 == 1
+            data = await self.client.read_all(EXTRA_PIDS if want_extra else None)
+            if self.data is not None:
+                for pid in EXTRA_PIDS:
+                    if pid not in data.readings and pid in self.data.readings:
+                        data.readings[pid] = self.data.readings[pid]
         except FourHeatError as err:
             _LOGGER.debug("Kontroll-Abfrage fehlgeschlagen: %s", err)
             return None

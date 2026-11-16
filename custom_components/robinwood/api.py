@@ -22,6 +22,7 @@ CONNECT_TIMEOUT = 5
 READ_TIMEOUT = 8
 SEND_DELAY = 0.5  # die App wartet nach dem Verbinden 500 ms vor dem Senden
 RETRIES = 3
+PAUSE_BETWEEN = 1.5  # Pause zwischen zwei Verbindungen – das Modul verkraftet keine schnelle Folge
 
 
 class FourHeatError(Exception):
@@ -160,7 +161,10 @@ class FourHeatClient:
             last: Exception | None = None
             for attempt in range(1, RETRIES + 1):
                 try:
-                    resp = await self._exchange_once(payload, allow_empty=is_command)
+                    try:
+                        resp = await self._exchange_once(payload, allow_empty=is_command)
+                    finally:
+                        await asyncio.sleep(PAUSE_BETWEEN)
                     if resp and resp[0] == "ERR":
                         raise FourHeatError(f"Modul meldet Fehler: {resp}")
                     return resp
@@ -171,7 +175,7 @@ class FourHeatClient:
                         raise FourHeatError(f"Befehl fehlgeschlagen: {err}") from err
                     last = err
                     _LOGGER.debug("Versuch %s/%s fehlgeschlagen: %s", attempt, RETRIES, err)
-                    await asyncio.sleep(1.5 * attempt)
+                    await asyncio.sleep(3 * attempt)
             raise FourHeatError(f"Keine Antwort von {self.host}: {last}")
 
     async def read_all(self, extra: list[str] | None = None) -> StoveData:
