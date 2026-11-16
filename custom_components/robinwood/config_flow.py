@@ -49,14 +49,22 @@ class RobinWoodConfigFlow(ConfigFlow, domain=DOMAIN):
 
 class RobinWoodOptionsFlow(OptionsFlow):
     async def async_step_init(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
+        entry = self.config_entry
         if user_input is not None:
+            host = str(user_input.pop(CONF_HOST, entry.data[CONF_HOST])).strip()
+            if host and host != entry.data[CONF_HOST]:
+                # IP-Adresse geändert: in den Eintragsdaten speichern
+                self.hass.config_entries.async_update_entry(
+                    entry, data={**entry.data, CONF_HOST: host}
+                )
             return self.async_create_entry(data=user_input)
-        current = self.config_entry.options.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL)
+        current = entry.options.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL)
         schema = vol.Schema(
             {
+                vol.Required(CONF_HOST, default=entry.data[CONF_HOST]): str,
                 vol.Required(CONF_SCAN_INTERVAL, default=current): vol.All(
                     int, vol.Range(min=MIN_SCAN_INTERVAL, max=600)
-                )
+                ),
             }
         )
         return self.async_show_form(step_id="init", data_schema=schema)

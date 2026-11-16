@@ -23,7 +23,8 @@
       "init": {
         "title": "Einstellungen",
         "data": {
-          "scan_interval": "Abfrageintervall (Sekunden)"
+          "scan_interval": "Abfrageintervall (Sekunden)",
+          "host": "IP-Adresse des 4Heat-Moduls"
         }
       }
     }
