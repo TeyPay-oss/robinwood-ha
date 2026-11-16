@@ -25,15 +25,14 @@ P_AIRFLOW = "30026"
 P_DEPRESSION = "30033"
 P_RETURN = "30040"
 P_OUTDOOR = "30044"
-P_POWER_SET = "20813"  # eingestellte Leistung Pellet (0=Zündl., 1=Standby, 2..=Stufe 1..)
+P_POWER_SET = "20813"  # Verbrennungsleistung Pellet
 P_POWER_MAX = "20211"  # Anzahl Leistungsstufen
 P_POWER_MIN = "20212"
 P_POWER_WOOD = "20803"
 P_THERMOSTAT = "20180"
 P_COMBUSTION = "30011"
 
-# Offset zwischen Rohwert (20813) und Leistungsstufe 1..n
-POWER_OFFSET = 1
+# 20813: Rohwert 1..n = P1..Pn, n+1 = Auto (n = Parameter 20211)
 
 STATUS_TEXT: dict[int, str] = {
     0: "Aus",

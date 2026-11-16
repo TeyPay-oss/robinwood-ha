@@ -29,7 +29,6 @@ from .const import (
     P_RETURN,
     P_STATUS,
     P_WATER,
-    POWER_OFFSET,
     STATUS_TEXT,
 )
 from .entity import RobinWoodEntity
@@ -158,7 +157,7 @@ class RWErrorSensor(RobinWoodEntity, SensorEntity):
 
 
 class RWPowerSensor(RobinWoodEntity, SensorEntity):
-    _attr_name = "Leistungsstufe eingestellt"
+    _attr_name = "Verbrennungsleistung eingestellt"
     _attr_icon = "mdi:speedometer"
 
     def __init__(self, coordinator) -> None:
@@ -166,15 +165,16 @@ class RWPowerSensor(RobinWoodEntity, SensorEntity):
 
     @property
     def native_value(self):
-        v = self.value(P_POWER_SET)
-        if v is None:
+        from .select import power_label
+
+        try:
+            levels = int(self.value(P_POWER_MAX))
+        except (TypeError, ValueError):
+            levels = 5
+        raw = self.value(P_POWER_SET)
+        if raw is None:
             return None
-        v = int(v)
-        if v == 0:
-            return "Zündleistung"
-        if v == 1:
-            return "Standby"
-        return f"Stufe {v - POWER_OFFSET}"
+        return power_label(raw, levels) or f"Wert {int(raw)}"
 
     @property
     def extra_state_attributes(self):

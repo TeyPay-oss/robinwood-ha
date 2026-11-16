@@ -1,4 +1,4 @@
-"""Leistungsstufe wählen."""
+"""Verbrennungsleistung wählen (P1 … Pn, Auto)."""
 
 from __future__ import annotations
 
@@ -7,8 +7,10 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from . import RobinWoodConfigEntry
-from .const import P_POWER_MAX, P_POWER_SET, POWER_OFFSET
+from .const import P_POWER_MAX, P_POWER_SET
 from .entity import RobinWoodEntity
+
+AUTO = "Auto"
 
 
 async def async_setup_entry(
@@ -17,24 +19,35 @@ async def async_setup_entry(
     async_add_entities([RWPowerSelect(entry.runtime_data)])
 
 
+def power_label(raw: int | None, levels: int) -> str | None:
+    """Rohwert 1..n = P1..Pn, n+1 = Auto (wie im Menü am Ofen)."""
+    if raw is None:
+        return None
+    raw = int(raw)
+    if 1 <= raw <= levels:
+        return f"P{raw}"
+    if raw == levels + 1:
+        return AUTO
+    return None
+
+
 class RWPowerSelect(RobinWoodEntity, SelectEntity):
-    _attr_name = "Leistungsstufe"
+    _attr_name = "Verbrennungsleistung"
     _attr_icon = "mdi:speedometer"
 
     def __init__(self, coordinator) -> None:
         super().__init__(coordinator, "leistungsstufe")
 
-    def _max(self) -> int:
-        m = self.value(P_POWER_MAX)
+    def _levels(self) -> int:
         try:
-            m = int(m)
+            m = int(self.value(P_POWER_MAX))
         except (TypeError, ValueError):
             m = 5
         return max(1, min(m, 9))
 
     @property
     def options(self) -> list[str]:
-        return [f"Stufe {i}" for i in range(1, self._max() + 1)]
+        return [f"P{i}" for i in range(1, self._levels() + 1)] + [AUTO]
 
     @property
     def available(self) -> bool:
@@ -42,15 +55,14 @@ class RWPowerSelect(RobinWoodEntity, SelectEntity):
 
     @property
     def current_option(self) -> str | None:
-        v = self.value(P_POWER_SET)
-        if v is None:
-            return None
-        stufe = int(v) - POWER_OFFSET
-        opt = f"Stufe {stufe}"
-        return opt if opt in self.options else None
+        return power_label(self.value(P_POWER_SET), self._levels())
 
     async def async_select_option(self, option: str) -> None:
-        stufe = int(option.split()[-1])
-        if not 1 <= stufe <= self._max():
-            raise ValueError(f"Ungültige Stufe: {option}")
-        await self.coordinator.async_write(P_POWER_SET, stufe + POWER_OFFSET)
+        n = self._levels()
+        if option == AUTO:
+            raw = n + 1
+        else:
+            raw = int(option.lstrip("P"))
+            if not 1 <= raw <= n:
+                raise ValueError(f"Ungültige Leistung: {option}")
+        await self.coordinator.async_write(P_POWER_SET, raw)

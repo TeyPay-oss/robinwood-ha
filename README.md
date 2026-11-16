@@ -7,7 +7,7 @@ Lokale Integration für Robin-Wood-Pelletöfen mit dem **4Heat-WLAN-Modul**, als
 | Entität | Funktion |
 |---|---|
 | `switch` **Ofen** | Ein / Aus |
-| `select` **Leistungsstufe** | Stufe 1 … n (n vom Ofen gemeldet) |
+| `select` **Verbrennungsleistung** | P1 … P5 oder Auto (wie am Display) |
 | `button` **Störung quittieren** | Entsperren nach „Block“ |
 | `binary_sensor` **Störung** | an bei Fehler oder Block |
 | `sensor` Status, Fehler | als Klartext |
