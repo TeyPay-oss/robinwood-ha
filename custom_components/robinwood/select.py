@@ -7,7 +7,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from . import RobinWoodConfigEntry
-from .const import P_POWER_MAX, P_POWER_SET
+from .const import P_COMBUSTION, P_POWER_MAX, P_POWER_SET
 from .entity import RobinWoodEntity
 
 AUTO = "Auto"
@@ -56,6 +56,12 @@ class RWPowerSelect(RobinWoodEntity, SelectEntity):
     @property
     def current_option(self) -> str | None:
         return power_label(self.value(P_POWER_SET), self._levels())
+
+    @property
+    def extra_state_attributes(self):
+        raw = self.value(P_COMBUSTION)
+        aktuell = f"P{int(raw)}" if raw else None
+        return {"aktuell": aktuell}
 
     async def async_select_option(self, option: str) -> None:
         n = self._levels()
