@@ -31,6 +31,19 @@ def power_label(raw: int | None, levels: int) -> str | None:
     return None
 
 
+def current_level_label(raw, levels: int = 9) -> str | None:
+    """Tatsächlich laufende Stufe; Werte außerhalb P1..Pn (z. B. 110) = Standby."""
+    if raw is None:
+        return None
+    try:
+        raw = int(raw)
+    except (TypeError, ValueError):
+        return None
+    if 1 <= raw <= levels:
+        return f"P{raw}"
+    return "Standby"
+
+
 class RWPowerSelect(RobinWoodEntity, SelectEntity):
     _attr_name = "Verbrennungsleistung"
     _attr_icon = "mdi:speedometer"
@@ -59,9 +72,7 @@ class RWPowerSelect(RobinWoodEntity, SelectEntity):
 
     @property
     def extra_state_attributes(self):
-        raw = self.value(P_COMBUSTION)
-        aktuell = f"P{int(raw)}" if raw else None
-        return {"aktuell": aktuell}
+        return {"aktuell": current_level_label(self.value(P_COMBUSTION), self._levels())}
 
     async def async_select_option(self, option: str) -> None:
         n = self._levels()

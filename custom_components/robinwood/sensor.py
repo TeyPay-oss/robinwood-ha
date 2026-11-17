@@ -43,6 +43,7 @@ from .const import (
     STATUS_TEXT,
 )
 from .entity import RobinWoodEntity
+from .select import current_level_label
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -235,11 +236,7 @@ class RWCurrentPowerSensor(RobinWoodEntity, SensorEntity):
 
     @property
     def native_value(self):
-        raw = self.value(P_COMBUSTION)
-        if raw is None:
-            return None
-        raw = int(raw)
-        return f"P{raw}" if raw > 0 else "–"
+        return current_level_label(self.value(P_COMBUSTION))
 
     @property
     def extra_state_attributes(self):
