@@ -211,11 +211,11 @@ class FourHeatClient:
     async def read_codes(self, pids: list[str]) -> dict[str, float | int | None]:
         """Einzelne Info-Werte gezielt lesen (wie die App: SEC mit I-Codes).
 
-        Nur Info-Parameter (3xxxx / 5xxxx) – das sind reine Messwerte.
+        Nur Lese-Anfragen (I-Code), Bereich 1xxxx–6xxxx. Schreibt nie.
         """
         for pid in pids:
-            if len(pid) != 5 or not pid.isdigit() or pid[0] not in "35":
-                raise ValueError(f"Nur Info-Parameter 3xxxx/5xxxx erlaubt: {pid}")
+            if len(pid) != 5 or not pid.isdigit() or pid[0] not in "123456":
+                raise ValueError(f"Nur Parameter 1xxxx–6xxxx erlaubt: {pid}")
         codes = [f"I{pid}000000000000" for pid in pids]
         payload = json.dumps(["SEC", str(len(codes)), *codes], separators=(",", ":"))
         resp = await self.exchange(payload)

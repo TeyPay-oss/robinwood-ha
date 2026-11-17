@@ -5,15 +5,15 @@ parameter_lesen:
       example: 30000
       selector:
         number:
-          min: 30000
-          max: 59999
+          min: 10000
+          max: 69999
           mode: box
     ende:
       example: 30060
       selector:
         number:
-          min: 30000
-          max: 59999
+          min: 10000
+          max: 69999
           mode: box
     nur_treffer:
       default: true
